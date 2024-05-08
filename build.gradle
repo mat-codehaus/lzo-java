@@ -20,6 +20,12 @@ stdproject {
 }
 
 subprojects {
+
+	// Override version if a project property is specified
+	if (project.hasProperty('releaseVersion')) {
+		version = project.releaseVersion
+	}
+
 	group = "org.anarres.lzo"
 
 	apply plugin: 'org.anarres.stdmodule'
@@ -43,12 +49,43 @@ project(':lzo-core') {
 	apply plugin: 'jcpp'
 
 	dependencies {
-		compile 'commons-logging:commons-logging:1.1.1'
+		compile 'commons-logging:commons-logging:1.1.3'
 	}
 
 	jcpp {
 		localIncludePath << project.file("src/main/jcpp/include")
 		localIncludePath << project.file("src/main/jcpp/src")
+	}
+
+	jar {
+		manifest {
+
+			attributes('Bundle-ManifestVersion': '2')
+			attributes('Bundle-Name': 	         'LZO Compression')
+			attributes('Bundle-Version':         "${version}")
+			attributes('Bundle-SymbolicName':    'org.anarres.lzo')
+			attributes('Export-Package': 	     'org.anarres.lzo;version="1.0.7"')
+			attributes('Import-Package': 	     'org.apache.commons.logging')
+		}
+	}
+
+	task bundleJars(type: Copy) {
+		// Define the directory to store the bundled JARs
+		def bundleDir = "${buildDir}/bundle"
+		mkdir(bundleDir) // Ensure the directory exists
+
+		// Copy the main JAR file
+		from jar.outputs.files
+		into bundleDir
+
+		// Copy all compile dependency JARs without extracting them
+		from configurations.compile
+		into "${bundleDir}/libs"
+
+		// Optionally, log the output directory after the task completes
+		doLast {
+			println "Bundled JARs have been copied to: $bundleDir"
+		}
 	}
 }
 
